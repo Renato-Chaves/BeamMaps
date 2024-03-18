@@ -1,5 +1,5 @@
 import customtkinter
-import math
+import db_connect
 
 #test
 import search_algorithm as greedy
@@ -17,10 +17,14 @@ class App(customtkinter.CTk):
         self.grid_rowconfigure((1), weight=1)
         self.grid_columnconfigure((0, 1), weight=1)
 
+        self.db = db_connect.DBConnect()
+
+        self.routeTxt = ""
+        self.startingTxt = ""
+        self.destinyTxt = ""
         self.routeTxt = ""
         self.selectedStart = -1
         self.selectedDestiny = -1
-        self.routeTxt = ""
 
         self.routes = [[0, 19],
                        [0, 15],
@@ -235,7 +239,7 @@ class App(customtkinter.CTk):
         self.canvas.create_text(501 - 5, 248 + 5, text="Hirsova", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
         self.canvas.create_text(534 - 0, 350 + 5, text="Eforie", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
         self.canvas.create_text(506 + 2, 164 + 7, text="Vaslui", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
-        self.canvas.create_text(470 - 0, 96 + 7, text="bsi", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
+        self.canvas.create_text(470 - 0, 96 + 7, text="iasi", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
         self.canvas.create_text(364 - 4, 42 + 7, text="Neamt", font=("YU Gothic UI Semibold", 11), anchor="w", fill="#FFFFFF")
 
         self.canvas.pack(pady=(10 , 0))
@@ -249,43 +253,51 @@ class App(customtkinter.CTk):
             self.canvas.tag_bind(btn, "<Button-1>", self.clicked)
             index+=1
         
+        self.clearRoads()
+
+    # add methods to app
+        self.test = 0
+
+    def clearRoads(self):
+        index = len(self.btns)+1
         for road in self.roads:
             self.canvas.itemconfigure(index, fill="#A3A3A3")
             self.canvas.itemconfigure(index, width=4)
             self.canvas.tag_lower(index)
             index+=1
 
-    # add methods to app
-        self.test = 0
-
     def calculateRoute(self):
-        self.greedy = greedy.Greedy(self.selectedDestiny)
-        self.greedy.search(city.city(self.selectedStart, 'Arad'))
-        self.routeTxt = self.greedy.resultTxt
-        self.test+=1
-        routeTotalDist = 0
-        for x in range(self.test):
-            # routeTxt += "Arad -> Zerind\n75km\n-----------\n"
-            routeTotalDist += 75
-        self.updateRouteText(self.routeTxt, str(self.greedy.resultDist))
-        self.canvas.itemconfigure(len(self.btns)+1, width=6, fill="#10A674")
+        if(self.selectedStart != -1 and self.selectedDestiny != -1):
+            self.greedy = greedy.Greedy(self.selectedDestiny)
+            self.greedy.search(city.city(self.selectedStart, 'Arad'))
+            self.routeTxt = self.greedy.resultTxt
+            self.test+=1
 
-        roadIndex = 0
-        print(str(self.greedy.roadPath0)+" | "+str(self.greedy.roadPath1))
-        for x in range(len(self.greedy.roadPath0)):
-            routeIndex = 0
-            for route in self.routes:
-                print("yo")
-                if(route[0] == self.greedy.roadPath0 and route[1] == self.greedy.roadPath1):
-                    self.canvas.itemconfigure(len(self.btns)+routeIndex, width=6, fill="#10A674")
-                    print("painted")
-                if(route[1] == self.greedy.roadPath0 and route[0] == self.greedy.roadPath1):
-                    print("painted")
-                    self.canvas.itemconfigure(len(self.btns)+routeIndex, width=6, fill="#10A674")
-            roadIndex += 1
+            self.updateRouteText(str(self.greedy.resultDist))
+            # self.canvas.itemconfigure(len(self.btns)+1, width=6, fill="#10A674")
+
+            roadIndex = 0
+            print(str(self.greedy.roadPath0)+" | "+str(self.greedy.roadPath1))
+            self.clearRoads()
+            for x in range(len(self.greedy.roadPath0)):
+                routeIndex = 0
+                # print(str(self.routes[0][0])+", "+str(self.routes[0][1])+" | "+str(self.greedy.roadPath0[0])+", "+str(self.greedy.roadPath0[1]))
+                for route in self.routes:
+                    routeIndex += 1
+                    if(route[0] == self.greedy.roadPath0[roadIndex] and route[1] == self.greedy.roadPath1[roadIndex]):
+                        self.canvas.itemconfigure(len(self.btns)+routeIndex, width=6, fill="#10A674")
+                        print("painted")
+                    if(route[1] == self.greedy.roadPath0[roadIndex] and route[0] == self.greedy.roadPath1[roadIndex]):
+                        print("painted")
+                        self.canvas.itemconfigure(len(self.btns)+routeIndex, width=6, fill="#10A674")
+                roadIndex += 1
+        else:
+            self.routeTxt = ""
+            self.updateRouteText(0)
+            self.clearRoads()
 
 
-    def updateRouteText(self, _routeTxt, _routeTotalDist):
+    def updateRouteText(self, _routeTotalDist):
         # self.routeTxt = _routeTxt
         self.routeTextBox.configure(state=customtkinter.NORMAL)
         self.routeTextBox.delete(1.0, customtkinter.END)
@@ -296,13 +308,11 @@ class App(customtkinter.CTk):
         self.totalDistanceLabel.configure(text="Total\n"+str(_routeTotalDist)+"km")
 
     def updateCityLabel(self):
-        startingTxt = ""
-        destinyTxt = ""
-        if(self.selectedStart == -1): startingTxt = "Choose an Origin"
-        else: startingTxt = str(self.selectedStart);
-        if(self.selectedDestiny == -1): destinyTxt = "Choose a Destiny"
-        else: destinyTxt = str(self.selectedDestiny);
-        self.chosenCityLabel.configure(text=startingTxt+" -> "+destinyTxt)
+        if(self.selectedStart == -1): self.startingTxt = "Choose an Origin"
+        else: self.startingTxt = self.db.GetCityName(self.selectedStart)
+        if(self.selectedDestiny == -1): self.destinyTxt = "Choose a Destiny"
+        else: self.destinyTxt = self.db.GetCityName(self.selectedDestiny)
+        self.chosenCityLabel.configure(text=self.startingTxt+" -> "+self.destinyTxt)
 
     def paintCity(self):
         index = 1
@@ -323,10 +333,10 @@ class App(customtkinter.CTk):
         item = event.widget.find_closest(event.x, event.y)
         if(self.canvas.itemcget(item, "fill") != "#A3A3A3" and self.canvas.itemcget(item, "fill") != "#FFFFFF"):
             if(self.selectedStart == -1 or self.selectedDestiny == -1):
-                if(self.selectedStart == -1 and self.selectedDestiny != item[0]-1): self.selectedStart = item[0]-1;
-                elif (self.selectedStart == -1 and self.selectedDestiny == item[0]-1): self.selectedDestiny = -1;
-                elif(self.selectedDestiny == -1 and self.selectedStart != item[0]-1): self.selectedDestiny = item[0]-1;
-                elif (self.selectedDestiny == -1 and self.selectedStart == item[0]-1): self.selectedStart = -1;
+                if(self.selectedStart == -1 and self.selectedDestiny != item[0]-1): self.selectedStart = item[0]-1
+                elif (self.selectedStart == -1 and self.selectedDestiny == item[0]-1): self.selectedDestiny = -1
+                elif(self.selectedDestiny == -1 and self.selectedStart != item[0]-1): self.selectedDestiny = item[0]-1
+                elif (self.selectedDestiny == -1 and self.selectedStart == item[0]-1): self.selectedStart = -1
                 print("Clicked "+str(item[0]))
             else:
                 if (self.selectedStart == item[0]-1):

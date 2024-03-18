@@ -31,8 +31,13 @@ class Greedy:             #Searching Class
             adjacents = self.dbConnection.GetAdjacent(current.id, self.visited)
             self.sortedVector = sort.SortedVector(len(adjacents))
             self.sortedVector.sortAdjacents(adjacents)
-            self.resultTxt += current.name+" -> "+self.sortedVector.nearestCity.name+"\n"+str(self.sortedVector.nearestCity.dist)+"km\n"
-            self.roadPath0.append(current.id)
-            self.roadPath1.append(self.sortedVector.nearestCity.id)
-            self.resultDist += self.sortedVector.nearestCity.dist
-            self.search(self.sortedVector.nearestCity)
+            if(len(self.sortedVector.values)>0):
+                self.resultTxt += current.name+" -> "+self.sortedVector.values[0].name+"\n"+str(self.sortedVector.values[0].dist)+"km\n"
+                self.roadPath0.append(current.id)
+                self.roadPath1.append(self.sortedVector.values[0].id)
+                self.resultDist += self.sortedVector.values[0].dist
+            else:
+                self.resultTxt = "Route not Found"
+
+            if(len(self.sortedVector.values)>0):
+                self.search(self.sortedVector.values[0])
